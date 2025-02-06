@@ -1,31 +1,32 @@
+import 'package:chat_app/helpers/snack_bar.dart';
 import 'package:chat_app/style/app_colors/app_colors.dart';
 import 'package:chat_app/ui/screens/chat.dart';
-import 'package:chat_app/ui/screens/log_in.dart';
+import 'package:chat_app/ui/screens/register.dart';
 import 'package:chat_app/ui/widgets/custom_button.dart';
 import 'package:chat_app/ui/widgets/custom_text_form_field.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 
-import '../../helpers/snack_bar.dart';
 import '../../style/images/images.dart';
 
-class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
-  static String routeName = "registerScreen";
+class LogInScreen extends StatefulWidget {
+  const LogInScreen({super.key});
+
+  static String routeName = "logIn";
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  State<LogInScreen> createState() => _LogInScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _LogInScreenState extends State<LogInScreen> {
   String? email;
 
   String? password;
 
-  GlobalKey<FormState> formKey = GlobalKey();
-
   bool isLoaded = false;
+
+  GlobalKey<FormState> formKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +58,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 Row(
                   children: [
-                    Text("Register",
+                    Text("Sign In",
                         style:
                             TextStyle(color: AppColors.kWhite, fontSize: 22)),
                   ],
@@ -66,8 +67,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   height: 20,
                 ),
                 CustomTextFormField(
-                    onChange: (inputE) {
-                      email = inputE;
+                    onChange: (eInput) {
+                      email = eInput;
                     },
                     hintText: "Email"),
                 const SizedBox(
@@ -75,37 +76,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 CustomTextFormField(
                     forSecurity: true,
-                    onChange: (inputP) {
-                      password = inputP;
+                    onChange: (pInput) {
+                      password = pInput;
                     },
                     hintText: "Password"),
                 const SizedBox(
                   height: 20,
                 ),
-                CustomButton(
-                  onTap: () async {
-                    if (formKey.currentState!.validate()) {
-                      isLoaded = true;
-                      setState(() {});
-                      try {
-                        await registerAuth();
-                        snackBar(context, "Success");
-                        Navigator.pushNamed(context, ChatScreen.routeName,
-                            arguments: email);
-                      } on FirebaseAuthException catch (e) {
-                        if (e.code == "weak-password") {
-                          snackBar(context, "weak-password");
-                        } else if (e.code == "email-already-in-use") {
-                          snackBar(context, "email-already-in-use");
+                GestureDetector(
+                  child: CustomButton(
+                    onTap: () async {
+                      if (formKey.currentState!.validate()) {
+                        isLoaded = true;
+                        setState(() {});
+                        try {
+                          await signInUser();
+                          Navigator.pushNamed(context, ChatScreen.routeName,
+                              arguments: email);
+                        } on FirebaseAuthException catch (e) {
+                          if (e.code == 'user-not-found') {
+                            snackBar(context, "No user found for that email.");
+                          } else if (e.code == 'wrong-password') {
+                            snackBar(context,
+                                "Wrong password provided for that user.");
+                          }
+                        } catch (e) {
+                          snackBar(context, "There is an error");
                         }
-                      } catch (e) {
-                        snackBar(context, "There is an error");
+                        isLoaded = false;
+                        setState(() {});
                       }
-                    }
-                    isLoaded = false;
-                    setState(() {});
-                  },
-                  title: "Register",
+                    },
+                    title: "LogIn",
+                  ),
                 ),
                 const SizedBox(
                   height: 10,
@@ -114,15 +117,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      "already have an account ",
+                      "don't have an account ",
                       style: TextStyle(color: AppColors.kWhite),
                     ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.pop(context, LogInScreen.routeName);
+                        Navigator.pushNamed(context, RegisterScreen.routeName);
                       },
                       child: const Text(
-                        "Register",
+                        "Sign Up",
                         style: TextStyle(color: Color(0XFFC7EDE6)),
                       ),
                     ),
@@ -139,8 +142,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Future<void> registerAuth() async {
+  Future<void> signInUser() async {
     final credential = await FirebaseAuth.instance
-        .createUserWithEmailAndPassword(email: email!, password: password!);
+        .signInWithEmailAndPassword(email: email!, password: password!);
   }
 }
